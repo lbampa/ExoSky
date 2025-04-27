@@ -1,0 +1,15 @@
+name,constellation,RA_deg,Dec_deg,mag,Distance_ly
+Betelgeuse,Orion,88.7929,7.4071,0.42,723.18
+Rigel,Orion,78.6345,-8.2016,0.18,862.85
+Bellatrix,Orion,81.2828,6.3497,1.64,252.44
+Mintaka,Orion,83.0017,-0.2991,2.23,1079.99
+Alnilam,Orion,84.0534,-1.2019,1.69,1698.73
+Alnitak,Orion,85.1897,-1.9426,1.74,1087.19
+Saiph,Orion,86.9391,-9.6696,2.07,1370.4
+Dubhe,Ursa Major,165.4606,61.751,1.79,129.27
+Merak,Ursa Major,165.9322,56.3824,2.37,83.31
+Phecda,Ursa Major,177.2645,53.6948,2.41,85.99
+Megrez,Ursa Major,183.856,57.0326,3.32,79.41
+Alioth,Ursa Major,193.5073,55.9598,1.76,80.95
+Mizar,Ursa Major,200.9814,54.9254,2.06,85.81
+Alkaid,Ursa Major,206.8856,49.3133,1.85,103.94
