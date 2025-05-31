@@ -13,7 +13,8 @@
 			"extensions": [
 				"ms-vsliveshare.vsliveshare",
 				"ms-python.python",
-				"ms-toolsai.jupyter"
+				"ms-toolsai.jupyter",
+				"charliermarsh.ruff"
 			]
 		}
 	}
