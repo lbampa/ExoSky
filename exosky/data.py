@@ -1,29 +1,38 @@
-import pandas
 import numpy
+import polars
+from polars.datatypes import DataTypeClass
+
+stars_schema: dict[str, DataTypeClass] = {
+    "x": polars.Float64,
+    "y": polars.Float64,
+    "z": polars.Float64,
+    "magnitude": polars.Float64,
+    "name": polars.Utf8,
+    "constellation": polars.Utf8,
+}
 
 
-def read_data(filename: str) -> pandas.DataFrame:
+def read_data(filename: str) -> polars.DataFrame:
     """
     Read the data from a CSV file and return it as a pandas DataFrame.
     """
-    df = pandas.read_csv(filename)
+    df = polars.read_csv(filename)
+    deg_to_rad = numpy.pi / 180
+    df = df.with_columns(
+        [
+            (polars.col("RA_deg") * deg_to_rad).alias("RA_rad"),
+            (polars.col("Dec_deg") * deg_to_rad).alias("Dec_rad"),
+        ]
+    )
 
-    # convert the RA and DEC columns to x, y, z coordinates
-    # in the dataset, the columns are named "RA_deg" and "Dec_deg", and they are in degrees
-    # also, the distance is "Distance_ly" in light years
+    df = df.with_columns(
+        [
+            (-polars.col("Distance_ly") * polars.col("Dec_rad").cos() * polars.col("RA_rad").cos()).alias("x"),
+            (-polars.col("Distance_ly") * polars.col("Dec_rad").cos() * polars.col("RA_rad").sin()).alias("y"),
+            (-polars.col("Distance_ly") * polars.col("Dec_rad").sin()).alias("z"),
+        ]
+    )
 
-    # convert the RA and DEC columns to radians
-    df["RA_rad"] = numpy.radians(df["RA_deg"])
-    df["Dec_rad"] = numpy.radians(df["Dec_deg"])
-
-    # convert the RA and DEC columns to x, y, z coordinates
-    df["x"] = df["Distance_ly"] * numpy.cos(df["Dec_rad"]) * numpy.cos(df["RA_rad"])
-    df["y"] = df["Distance_ly"] * numpy.cos(df["Dec_rad"]) * numpy.sin(df["RA_rad"])
-    df["z"] = df["Distance_ly"] * numpy.sin(df["Dec_rad"])
-
-    # return only the columns we need: x, y, z, name, mag, constellation
-    df = df[["x", "y", "z", "name", "mag", "constellation"]]
-
-    return df
-
-print(read_data("tests/official_constellation_figure_stars.csv").head())
+    df = df.select(["x", "y", "z", "magnitude", "name", "constellation"])
+    df2 = polars.DataFrame(df, stars_schema)
+    return df2

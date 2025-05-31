@@ -1,4 +1,5 @@
-name,constellation,RA_deg,Dec_deg,mag,Distance_ly
+name,constellation,RA_deg,Dec_deg,magnitude,Distance_ly
+Test,Orion,90.0,90.0,1.0,100.0
 Betelgeuse,Orion,88.7929,7.4071,0.42,723.18
 Rigel,Orion,78.6345,-8.2016,0.18,862.85
 Bellatrix,Orion,81.2828,6.3497,1.64,252.44
