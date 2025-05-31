@@ -1,5 +1,5 @@
 name,constellation,RA_deg,Dec_deg,magnitude,Distance_ly
-Test,Orion,90.0,90.0,1.0,100.0
+Sun,Sol,0.0,0.0,-26.74,0.0000158
 Betelgeuse,Orion,88.7929,7.4071,0.42,723.18
 Rigel,Orion,78.6345,-8.2016,0.18,862.85
 Bellatrix,Orion,81.2828,6.3497,1.64,252.44
@@ -14,3 +14,4 @@ Megrez,Ursa Major,183.856,57.0326,3.32,79.41
 Alioth,Ursa Major,193.5073,55.9598,1.76,80.95
 Mizar,Ursa Major,200.9814,54.9254,2.06,85.81
 Alkaid,Ursa Major,206.8856,49.3133,1.85,103.94
+Test,Orion,90.0,90.0,1.0,100.0
