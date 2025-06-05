@@ -1,0 +1,26 @@
+{
+    "global": {
+        "font_path": "NotoSans-Regular.ttf",
+        "font_size": 14
+    },
+    "panel": {
+        "colours": {
+            "normal_bg": "#80808066",
+            "border": "#FFFFFFFF",
+            "text": "#FFFFFFFF"
+        },
+        "misc": {
+            "border_width": 1,
+            "shape": "rectangle",
+            "shadow_width": 0
+        }
+    },
+    "label": {
+        "colours": {
+            "normal_text": "#FFFFFFFF"
+        },
+        "font": {
+            "size": 14
+        }
+    }
+}

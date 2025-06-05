@@ -5,6 +5,7 @@ import pygame
 from pydantic import BaseModel
 
 from exosky.components import Component, KeyboardComponent, MouseComponent, SkyComponent, Star
+from exosky.components.ui import UIComponentFactory
 from exosky.data import read_data
 from exosky.state import AppState
 
@@ -44,6 +45,7 @@ class App:
         pygame.init()
         display_flags = 0  # | (pygame.FULLSCREEN if self.config.full_screen else 0)
         self.surface = pygame.display.set_mode(self.config.screen_size, display_flags)
+        self.components.append(UIComponentFactory(self.config.screen_size))
 
     def run(self):
         try:
