@@ -18,6 +18,7 @@ def read_data(filename: str) -> polars.DataFrame:
     """
     df = polars.read_csv(filename)
     deg_to_rad = numpy.pi / 180
+    df = df.filter(polars.col("Distance_ly").is_not_nan())
     df = df.with_columns(
         [
             (polars.col("RA_deg") * deg_to_rad).alias("RA_rad"),

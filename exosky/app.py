@@ -1,7 +1,7 @@
+import logging
 import traceback
 
 import pygame
-import pygame_gui
 from pydantic import BaseModel
 
 from exosky.components import Component, KeyboardComponent, MouseComponent, SkyComponent, Star
@@ -29,7 +29,8 @@ class App:
     def __init__(self, config: AppConfig = AppConfig()):
         self.config = config
         self.clock = pygame.time.Clock()
-        df = read_data("tests/official_constellation_figure_stars.csv")
+        # df = read_data("tests/official_constellation_figure_stars.csv")
+        df = read_data("data/simbad_constellation_stars.csv")
         stars = [Star(**row) for row in df.to_dicts()]
         self.components: list[Component] = [
             KeyboardComponent(),
@@ -38,13 +39,11 @@ class App:
         ]
         self.state = AppState()
         self.surface: pygame.Surface
-        self.gui: pygame_gui.UIManager
 
     def initialize(self):
-        display_flags = 0  # | (pygame.FULLSCREEN if self.config.full_screen else 0)
         pygame.init()
+        display_flags = 0  # | (pygame.FULLSCREEN if self.config.full_screen else 0)
         self.surface = pygame.display.set_mode(self.config.screen_size, display_flags)
-        self.gui = pygame_gui.UIManager(self.config.screen_size)
 
     def run(self):
         try:
@@ -88,4 +87,5 @@ class App:
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     App().run()

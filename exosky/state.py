@@ -47,12 +47,12 @@ class MouseState(BaseModel):
     position: tuple[int, int] = (0, 0)
     position_delta: tuple[int, int] = (0, 0)
 
-    @property
-    def dragging(self) -> bool:
-        return self.pressed_buttons[pygame.BUTTON_LEFT] and self.position_delta != (
-            0,
-            0,
-        )
+    def is_dragging(self) -> bool:
+        return self.pressed_buttons[pygame.BUTTON_LEFT] 
+            # and self.position_delta != (
+            #     0,
+            #     0,
+            # )
 
     def set_button(self, button: MouseButton) -> None:
         self.pressed_buttons[button] = True
@@ -73,6 +73,7 @@ class MouseState(BaseModel):
 class UIState(BaseModel):
     keyboard: KeyboardState = KeyboardState()
     mouse: MouseState = MouseState()
+    enabled: bool = True
 
 
 class AppState(BaseModel):
