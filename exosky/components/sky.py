@@ -1,17 +1,21 @@
-import itertools
 import random
 
 import numpy as np
 import pygame
-from numpy.typing import NDArray
 from pydantic import BaseModel
 
-from exosky._data.constellation_schemas import read_constellations
-from exosky.components import Component
+from exosky._data.simbad import StarData
 from exosky.state import AppState
 from exosky.transform import Rotation, Transform, Translation
 
+from .component import Component
+from .star_data import StarDataComponent
+
 ROTATION_SPEED = 0.03
+
+
+def tuple_dist2(t1: tuple[int, int], t2: tuple[int, int]) -> float:
+    return (t1[0] - t2[0]) ** 2 + (t1[1] - t2[1]) ** 2
 
 
 class CameraState(BaseModel):
@@ -20,62 +24,29 @@ class CameraState(BaseModel):
     transform: Transform = Transform()
 
 
-class Star(BaseModel):
-    x: float
-    y: float
-    z: float
-    magnitude: float
-    name: str
-    constellation: str
-
-
-class StarScreenProjection(BaseModel):
-    x: int
-    y: int
-    z: float
-    data: Star
-
-
 class SkyComponent(Component):
     surface: pygame.Surface = pygame.Surface((1920, 1080))
-    stars_data: list[Star] = []
-    stars_coords: NDArray[np.float64] = np.array([])
+    stars: StarDataComponent = StarDataComponent()
     camera: CameraState = CameraState()
     constellation_colors: dict[str, tuple[int, int, int]] = {}
-    _need_redraw: bool = True
-    constellation_lines: dict[str, list[tuple[str, str]]] = {}
-    star_connections: dict[str, list[str]] = {}
+    screen_projections: dict[str, tuple[int, int]] = {}
 
     def model_post_init(self, _):
-        self.stars_coords = np.array([[s.x, s.y, s.z] for s in self.stars_data])
-        constellation_names = {star.constellation for star in self.stars_data}
         self.constellation_colors = {
             constellation: (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-            for constellation in constellation_names
+            for constellation in self.stars.constellations
         }
         self.constellation_colors["Sol"] = (255, 255, 255)
-        self.constellation_colors["Orion"] = (255, 0, 0)
-        self.constellation_colors["Ursa Major"] = (0, 255, 255)
 
-        constellations = read_constellations()
-        self.constellation_lines = {name: list() for name in constellations}
-        star_names = itertools.chain.from_iterable(c.stars for c in constellations.values())
-        self.star_connections = {name: list() for name in star_names}
-        for name, constellation in constellations.items():
-            for line in constellation.lines:
-                self.constellation_lines[name].extend(itertools.pairwise(line))
-                for first, second in itertools.pairwise(line):
-                    self.star_connections[first].append(second)
-                    self.star_connections[second].append(first)
+    def move_to_star(self, star_name: str) -> None:
+        star = self.stars.get_star(star_name)
+        if star is None:
+            return
+        self.camera.transform.translation = Translation.from_array(self.stars.star_cartesian_coords(star_name))
+        self.need_redraw = True
 
     def update_camera(self, state: AppState):
-        mouse = state.ui_state.mouse
         new_rotation = Rotation()
-        if mouse.is_dragging():
-            # this should be improved so that the same camera ray always stays under the cursor.
-            # this will give a beter feel, like you're actually dragging the universe around you
-            new_rotation.pitch -= mouse.position_delta[1] * 0.3
-            new_rotation.yaw += mouse.position_delta[0] * 0.3
 
         keyboard = state.ui_state.keyboard
         for key in keyboard.active_keys():
@@ -94,13 +65,11 @@ class SkyComponent(Component):
                     new_rotation.yaw -= ROTATION_SPEED
                 case pygame.K_r:
                     self.camera.transform = Transform()
-                    self._need_redraw = True
-                case pygame.K_t:
-                    self.camera.transform.translation = Translation.from_array(self.stars_coords[1])
+                    self.need_redraw = True
                 case _:
                     pass
         if any(v != 0 for v in [new_rotation.yaw, new_rotation.pitch, new_rotation.roll]):
-            self._need_redraw = True
+            self.need_redraw = True
             R = self.camera.transform.rotation.__array__()
             delta_R = new_rotation.__array__()
             self.camera.transform.rotation = Rotation.from_matrix(R @ delta_R.T)
@@ -110,7 +79,9 @@ class SkyComponent(Component):
 
     def _refresh(self):
         self.surface.fill((0, 0, 0))
-        coords_from_camera = self.camera.transform.apply_inverse(self.stars_coords)
+        if len(self.stars.cartesian_coords) == 0:
+            return
+        coords_from_camera = self.camera.transform.apply_inverse(self.stars.cartesian_coords)
         width, height = self.surface.get_size()
         scren_center = np.array([width // 2, height // 2], dtype=np.int32)
         _z = coords_from_camera[:, 2]
@@ -119,26 +90,37 @@ class SkyComponent(Component):
             np.int32
         ) + scren_center
         stars_projection = {
-            star.name: (x, y, z)
-            for (x, y), z, star in zip(screen_projection, coords_from_camera[:, 2], self.stars_data)
+            star: (x, y, z)
+            for (x, y), z, star in zip(screen_projection, coords_from_camera[:, 2], self.stars.polar_data)
         }
-        for (x, y), z, star in zip(screen_projection, coords_from_camera[:, 2], self.stars_data):
-            color = self.constellation_colors[star.constellation]
+        self.screen_projections.clear()
+        for (x, y), z, (star, star_data) in zip(screen_projection, _z, self.stars.polar_data.items()):
             # skip if star is behind the camera, or outside the screen
             if z >= 0 or not 0 <= x <= self.surface.width or not 0 <= y <= self.surface.height:
                 continue
-            # draw star
 
-            pygame.draw.circle(self.surface, color, (x, y), 2)
+            color = self.constellation_colors[star_data.constellation]
+            self.screen_projections[star] = (x, y)
+            # draw star
+            radius = 2 if star != "Sol" else 4  # let's make our star bigger, so we can identify it more easily
+            pygame.draw.circle(self.surface, color, (x, y), radius)
+
             # draw the lines
-            for other_star in self.star_connections[star.name]:
+            for other_star in self.stars.star_connections[star]:
                 if other_star not in stars_projection:
                     continue
                 other_x, other_y, *_ = stars_projection[other_star]
                 pygame.draw.line(self.surface, color, (x, y), (other_x, other_y))
 
     def draw(self, state: AppState, surface: pygame.Surface):
-        if self._need_redraw:
+        if self.need_redraw:
             self._refresh()
-            self._need_redraw = False
+            self.need_redraw = False
         surface.blit(self.surface, self.surface.get_rect())
+
+    def screen_closest_star(self, position: tuple[int, int], max_distance: float = 25) -> StarData | None:
+        proj = self.screen_projections
+        if len(proj) == 0:
+            return None
+        star = min(proj, key=lambda star: tuple_dist2(self.screen_projections[star], position))
+        return self.stars.polar_data[star] if tuple_dist2(proj[star], position) < max_distance**2 else None

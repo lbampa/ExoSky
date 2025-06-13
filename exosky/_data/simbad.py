@@ -1,50 +1,28 @@
-import astropy.units as u
-import polars
-from astropy.coordinates import SkyCoord
-from astroquery.simbad import Simbad
-from pydantic import BaseModel
+from typing import Annotated
 
-from .constellation_schemas import read_constellations
+import numpy as np
+import math
+
+from pydantic import BaseModel, Field
 
 
-class SimbadStarData(BaseModel):
+class StarData(BaseModel):
     name: str
     constellation: str
-    ra: float
-    dec: float
-    mag: float
-    distance: float
+    ra: Annotated[float, Field(alias="RA_deg")]  # in degrees
+    dec: Annotated[float, Field(alias="Dec_deg")]  # in degrees
+    mag: Annotated[float, Field(alias="magnitude")]
+    distance: Annotated[float, Field(alias="Distance_ly")]  # in light years
 
+    model_config = {"populate_by_name": True}
 
-def get_simbad_data() -> list[SimbadStarData]:
-    constellations = read_constellations()
-    star_constellations = {
-        star_name: constellation_name
-        for constellation_name, constellation in constellations.items()
-        for star_name in constellation.stars
-    }
+    def __hash__(self):
+        return self.model_dump_json().__hash__()
 
-    all_star_names = list(star_constellations)
-
-    Simbad.add_votable_fields("flux(V)", "ra", "dec")  # type: ignore
-    simbad_results = Simbad.query_objects(all_star_names)
-
-    coords = SkyCoord(ra=simbad_results["RA"], dec=simbad_results["DEC"], unit=(u.hourangle, u.deg))
-    stars = [
-        SimbadStarData(
-            name=name,
-            constellation=constellation,
-            ra=coord.ra.deg,
-            dec=coord.dec.deg,
-            mag=mag,
+    @property
+    def cartesian_coord(self) -> tuple[float, float, float]:
+        return (
+            -self.distance * math.cos(np.deg2rad(self.dec)) * math.cos(np.deg2rad(self.ra)),
+            -self.distance * math.cos(np.deg2rad(self.dec)) * math.sin(np.deg2rad(self.ra)),
+            -self.distance * math.sin(np.deg2rad(self.dec)),
         )
-        for (name, constellation), mag, coord in zip(star_constellations.items(), simbad_results["FLUX_V"], coords)
-    ]
-
-    return stars
-
-
-def save_constellation_stars() -> None:
-    stars = get_simbad_data()
-    df = polars.DataFrame([s.model_dump() for s in stars])
-    df.write_csv("data/constellation_stars.csv")

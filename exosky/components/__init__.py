@@ -1,6 +1,8 @@
 from .component import Component, Events
 from .inputs import KeyboardComponent, MouseComponent
-from .sky import CameraState, SkyComponent, Star
+from .sky import CameraState, SkyComponent
+from .star_data import StarDataComponent
+from .ui import UIComponent, UIComponentFactory
 
 __all__ = [
     # .component
@@ -12,5 +14,9 @@ __all__ = [
     # .sky
     "CameraState",
     "SkyComponent",
-    "Star",
+    # .star_data
+    "StarDataComponent",
+    # .ui
+    "UIComponent",
+    "UIComponentFactory",
 ]

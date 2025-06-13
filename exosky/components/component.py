@@ -10,6 +10,8 @@ Events = Iterable[pygame.event.Event]
 
 class Component(BaseModel):
     children: list[Self] = []
+    need_update: bool = True
+    need_redraw: bool = True
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def process_events(self, state: AppState, events: Events) -> AppState:

@@ -4,9 +4,10 @@ import traceback
 import pygame
 from pydantic import BaseModel
 
-from exosky.components import Component, KeyboardComponent, MouseComponent, SkyComponent, Star
+from exosky._data.constellation_schemas import read_constellations
+from exosky.components import Component, KeyboardComponent, MouseComponent, SkyComponent
+from exosky.components.star_data import StarDataComponent
 from exosky.components.ui import UIComponentFactory
-from exosky.data import read_data
 from exosky.state import AppState
 
 
@@ -30,13 +31,9 @@ class App:
     def __init__(self, config: AppConfig = AppConfig()):
         self.config = config
         self.clock = pygame.time.Clock()
-        # df = read_data("tests/official_constellation_figure_stars.csv")
-        df = read_data("data/simbad_constellation_stars.csv")
-        stars = [Star(**row) for row in df.to_dicts()]
         self.components: list[Component] = [
             KeyboardComponent(),
             MouseComponent(),
-            SkyComponent(stars_data=stars),
         ]
         self.state = AppState()
         self.surface: pygame.Surface
@@ -45,7 +42,12 @@ class App:
         pygame.init()
         display_flags = 0  # | (pygame.FULLSCREEN if self.config.full_screen else 0)
         self.surface = pygame.display.set_mode(self.config.screen_size, display_flags)
-        self.components.append(UIComponentFactory(self.config.screen_size))
+        star_data = StarDataComponent.from_csv("data/simbad_constellation_stars.csv")
+        star_data.constellations = read_constellations()
+        self.components.append(star_data)
+        sky = SkyComponent(stars=star_data)
+        self.components.append(sky)
+        self.components.append(UIComponentFactory(self.config.screen_size, sky=sky))
 
     def run(self):
         try:

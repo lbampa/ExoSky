@@ -4,6 +4,7 @@ from typing import Iterable
 import pygame
 from pydantic import BaseModel, Field
 
+from exosky._data.simbad import StarData
 from exosky.transform import Transform
 
 KeyCode = int
@@ -16,19 +17,8 @@ class CameraState(BaseModel):
     transform: Transform = Transform()
 
 
-class Star(BaseModel):
-    x: float
-    y: float
-    z: float
-    magnitude: float
-    name: str
-    constellation: str
-
-
 class KeyboardState(BaseModel):
-    pressed_keys: defaultdict[KeyCode, bool] = Field(
-        default_factory=lambda: defaultdict(lambda: False)
-    )
+    pressed_keys: defaultdict[KeyCode, bool] = Field(default_factory=lambda: defaultdict(lambda: False))
 
     def active_keys(self) -> Iterable[KeyCode]:
         return (key for key, status in self.pressed_keys.items() if status)
@@ -41,18 +31,12 @@ class KeyboardState(BaseModel):
 
 
 class MouseState(BaseModel):
-    pressed_buttons: defaultdict[MouseButton, bool] = Field(
-        default_factory=lambda: defaultdict(lambda: False)
-    )
+    pressed_buttons: defaultdict[MouseButton, bool] = Field(default_factory=lambda: defaultdict(lambda: False))
     position: tuple[int, int] = (0, 0)
     position_delta: tuple[int, int] = (0, 0)
 
     def is_dragging(self) -> bool:
-        return self.pressed_buttons[pygame.BUTTON_LEFT] 
-            # and self.position_delta != (
-            #     0,
-            #     0,
-            # )
+        return self.pressed_buttons[pygame.BUTTON_LEFT] and self.position_delta != (0, 0)
 
     def set_button(self, button: MouseButton) -> None:
         self.pressed_buttons[button] = True
@@ -74,6 +58,8 @@ class UIState(BaseModel):
     keyboard: KeyboardState = KeyboardState()
     mouse: MouseState = MouseState()
     enabled: bool = True
+    need_update: bool = True
+    star_data: StarData | None = None
 
 
 class AppState(BaseModel):
