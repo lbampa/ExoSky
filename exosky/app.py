@@ -40,7 +40,7 @@ class App:
 
     def initialize(self):
         pygame.init()
-        display_flags = 0  # | (pygame.FULLSCREEN if self.config.full_screen else 0)
+        display_flags = 0 | (pygame.FULLSCREEN if self.config.full_screen else 0)
         self.surface = pygame.display.set_mode(self.config.screen_size, display_flags)
         star_data = StarDataComponent.from_csv("data/simbad_constellation_stars.csv")
         star_data.constellations = read_constellations()
